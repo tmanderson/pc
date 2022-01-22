@@ -16,7 +16,7 @@ which is just a convenience function which maps your argument (a `string` or
 
 ### Example
 
-```
+```js
 const Digits = match(/[0-9]/);
 const Numbers = sequence([Digits, sequence([match('.'), Digits], 0)]);
 const Plus = sequence([Numbers, match('+'), Numbers]);
@@ -26,17 +26,18 @@ const Divide = sequence([Numbers, match('/'), Numbers]);
 const BinaryOp = any([Plus, Minus, Multiply, Divide]);
 const Parser = any([BinaryOp, Numbers, Digits]);
 
-Parser('5+5') // => [3, [['5', '+', '5']]];
+Parser('5+5') // => [3, [['5', '+', '5']]]
+Parser('5.1') // => [3, [['5', '.', '1']]]
 ```
 
 ## API
 
-### `match(pattern: string | RegExp, min?: number, max?: number): Matcher`
+### `match(pattern: string | RegExp, min?: number, max?: number): PrimitiveMatch`
 
 The `match` parser takes a `pattern`. If `pattern` is a `RegExp` remember that
 it will only match against _a single character of input_ at a time.
 
-```
+```js
 match('wow')('wow') // => [3, 'wow']
 match('wow')('wowwow') // => [6, 'wowwow']
 match('wow')('wowow') // => [3, 'wow']
@@ -45,12 +46,12 @@ match(/[wo]/)('wo') // => [2, 'wo']
 match(/[wo]/)('wowww') // => [5, 'wowww']
 ```
 
-### `sequence(patterns: Array<Matcher>, min?: number, max?: number): Matcher`
+### `sequence(patterns: Array<Matcher>, min?: number, max?: number): CompoundMatch`
 
 The `sequence` parser takes an ordered array of `Matcher`s, returning an array
 of tokens, each entry pertaining to the match specified within the `patterns`.
 
-```
+```js
 sequence([
   match('w'),
   match('o'),
@@ -66,12 +67,12 @@ sequence([
 ])('123-456-7890') // => [ 12, [ [ '123', '-', '456', '-', '7890' ] ] ]
 ```
 
-### `any(patterns: Array<Matcher>, min?: number, max?: number): Matcher`
+### `any(patterns: Array<Matcher>, min?: number, max?: number): CompoundMatch`
 
 The `any` parser takes an unordered array of `Matcher`s, returning an array
 of tokens, each entry pertaining to _any_ match within the `patterns`.
 
-```
+```js
 any([
   match(/[0-9]/),
   match(/[a-z ]/),
@@ -81,7 +82,13 @@ any([
 
 ## Types
 
+All parsers utilized by PC require an output of either the following types:
+
+```ts
+type PrimitiveMatch = [number, string | null];
+type CompoundMatch = [number, string[] | null];
 ```
-PrimitiveMatch: [number, string | null]
-CompoundMatch: [number, string[] | null]
-```
+
+The `number` value represents the total number of input characters consumed by
+the parser while the second argument represents the match. If `null` the input
+was not successfully parsed.
