@@ -1,0 +1,33 @@
+{
+  "name": "pc",
+  "description": "PC is minimal [parser combinator](https://en.wikipedia.org/wiki/Parser_combinator) framework enabling intuitive and modular parser development.",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "directories": {
+    "dist": "dist",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tmanderson/pc.git"
+  },
+  "devDependencies": {
+    "jest": "^27.4.7",
+    "typescript": "^4.5.4"
+  },
+  "scripts": {
+    "build": "tsc src/index.ts && mv src/index.js dist/index.js",
+    "test": "npm run build && jest"
+  },
+  "keywords": [
+    "parser",
+    "parser-generator",
+    "parsing"
+  ],
+  "author": "Mitch Anderson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tmanderson/pc/issues"
+  },
+  "homepage": "https://github.com/tmanderson/pc#readme"
+}
