@@ -14,6 +14,12 @@ Both the `string` and `regexp` parser can be created with the `match` parser,
 which is just a convenience function which maps your argument (a `string` or
 `RegExp`) to the `string` or `regexp` parser.
 
+### Install
+
+```
+npm i @tmanderson/pc
+```
+
 ### Example
 
 ```js
@@ -56,15 +62,13 @@ sequence([
   match('w'),
   match('o'),
   match('w')
-])('wow') // => [3, [ ['w', 'o', 'w'] ] ]
+])('wow') // => [3, [ 'wow' ] ]
 
 sequence([
   match(/[0-9]/, 3),
   match('-'),
-  match(/[0-9]/, 3),
-  match('-'),
   match(/[0-9]/, 4),
-])('123-456-7890') // => [ 12, [ [ '123', '-', '456', '-', '7890' ] ] ]
+])('123-4567') // => [ 8, [ '1', '2', '3', '-', '4', '5', '6', '7' ] ]
 ```
 
 ### `any(patterns: Array<Matcher>, min?: number, max?: number): CompoundMatch`
