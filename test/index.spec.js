@@ -1,6 +1,24 @@
 /* eslint-env jest */
 const { match, any, sequence } = require("../dist");
 
+describe('string', () => {
+  it('matches entire string', () => {
+    const Name = match('jodabalocky yodaleyeehoo')
+    expect(Name('jodabalocky yodaleyeehoo')).toEqual([24, ['jodabalocky yodaleyeehoo']]);
+  });
+});
+
+describe('regexp', () => {
+  it('regexp matches single character', () => {
+    const Telephone = match(/[-0-9]/);
+    expect(Telephone('123-456-7890')).toEqual(
+      expect.arrayContaining([
+        12, ['1', '2', '3', '-', '4', '5', '6', '-', '7', '8', '9', '0']
+      ])
+    );
+  });
+});
+
 describe('match', () => {
   const MatchWord = match(/[a-zA-Z]/);
 
