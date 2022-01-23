@@ -7,8 +7,8 @@ PC provides four fundamental parsers:
 
 - `string` for matching exact strings
 - `regexp` for matching character ranges
-- `sequence` for matching ordered patterns of parsers
-- `any` for matching any number of patterns in any order
+- `sequence` for matching ordered patterns of parsers (i.e. all patterns must match, one after the other)
+- `any` for matching any number of patterns in any order (i.e. at least one pattern must match)
 
 Both the `string` and `regexp` parser can be created with the `match` parser,
 which is just a convenience function which maps your argument (a `string` or
@@ -22,35 +22,76 @@ npm i @tmanderson/pc
 
 ### Example
 
-```js
-const Digits = match(/[0-9]/);
-const Numbers = sequence([Digits, sequence([match('.'), Digits], 0)]);
-const Plus = sequence([Numbers, match('+'), Numbers]);
-const Minus = sequence([Numbers, match('-'), Numbers]);
-const Multiply = sequence([Numbers, match('*'), Numbers]);
-const Divide = sequence([Numbers, match('/'), Numbers]);
-const BinaryOp = any([Plus, Minus, Multiply, Divide]);
-const Parser = any([BinaryOp, Numbers, Digits]);
+A toy XML parser could begin with something like this
 
-Parser('5+5') // => [3, [['5', '+', '5']]]
-Parser('5.1') // => [3, [['5', '.', '1']]]
+```js
+const TagOpen = match('<', 1, 1); // match for one and only one `<` character
+const TagClose = match('>', 1, 1); // matches for one and only one `>`
+const Slash = match('/', 1, 1); // matches for one and only one `/`
+const Word = match(/[-a-zA-Z]/); // capital and lowercase letters and `-` characters
+const Whitespace = match(/[\n\t\r ]/); // zero or more matches
+const OptionalWhitespace = match(/[\n\t\r ]/, 0); // zero or more matches
+
+const Words = any([Word, Whitespace, match(/[:\/_.]/)]); // words and whitespace
+
+const OptionalAttributes = sequence([
+  OptionalWhitespace, // ` `
+  Word, // a word
+  match('='),
+  match('"', 1, 1), // followed by a double-quote
+  Words, // then words
+  match('"', 1, 1) // and finally a closing double-quote
+], 0);
+
+const TagChildren = any([
+  Words,
+  Whitespace,
+  i => Tag(i) // lazy evaluation (also enables self-recursive matches)
+], 0);
+
+// <tag attr="val" ... />
+const SelfClosingTag = sequence([TagOpen, Word, OptionalAttributes, OptionalWhitespace, Slash, TagClose]);
+// <tag attr="val" ...>
+const OpeningTag = sequence([TagOpen, Word, OptionalAttributes, OptionalWhitespace, TagClose]);
+// </tag>
+const ClosingTag = sequence([TagOpen, Slash, Word, TagClose]);
+// <tag attr="val" ...> ... </tag>
+const TagWithChildren = sequence([OpeningTag, TagChildren, ClosingTag]);
+const Tag = any([SelfClosingTag, TagWithChildren]);
+
+const Parse = any([Whitespace, Words, Tag]);
+
+Parse('<body></body>');
+Parse(`
+  <body>
+    PC is minimal <a href="https://en.wikipedia.org/wiki/Parser_combinator">
+    parser combinator</a> framework enabling intuitive and modular parser
+    development.  
+  </body>
+`);
 ```
 
 ### Formatting output
 
-All PC parsers take a single argument (an `input` string) and return a [Match](#Types).
+All PC parsers take a single argument (an `input` string) and return a [`Match`](#Types).
 This makes interstitial operations (within the parsing context) a matter of defining
 a function with this input/ouput signature. Within that function you can manipulate
 input, output, the parser offset and/or the outputs of other parsers called within
 the function itself.
 
-```js
-const AlphaNumeric = match(/[a-zA-Z0-9]/);
-AlphaNumeric('Hello') // => [5, [ 'H', 'e', 'l', 'l', 'o' ] ]
+A common use-case of this might be in the concatenation of consecutive [`PrimitiveMatches`](#Types).
+For example, the parser `match('a')` would, given the input `'aaab'`, return
+`['a', 'a', 'a']` which can become daunting when reading through your parser output.
+It would be better if the output were `['aaa']`. We can resolve this issue by creating
+a `concat` utility for our simple parser:
 
-const FormattedAlphaNumeric = (input) => {
-  // AlphaNumeric parser returns a PrimitiveMatch [number, string]
-  const [inputOffset, matches] = AlphaNumeric(input);
+```js
+const SimpleParser = match('a');
+SimpleParser('aaab') // => [ 5, [ 'a', 'a', 'a' ] ]
+
+const concat = (input) => {
+  // SimpleParser returns a PrimitiveMatch [number, string]
+  const [inputOffset, matches] = SimpleParser(input);
   // if `matches` is null, this implies no matches (so inputOffset is 0)
   if (matches === null) return [0, null];
   // Otherwise return the same offset (we're not reducing/consuming extra input)
@@ -58,15 +99,15 @@ const FormattedAlphaNumeric = (input) => {
   return [inputOffset, matches.join('')]
 }
 
-FormattedAlphaNumeric('Hello') // => [5, ['Hello']]
+concat('aaab') // => [ 5, [ 'aaa' ] ]
 ```
 
 If you're one for concision, this function can be greatly minimized with an [IIFE](https://developer.mozilla.org/en-US/docs/Glossary/IIFE):
 
 ```js
-const FormattedAlphaNumeric = (input) =>
+const concat = (input) =>
   (([inputOffset, matches]) =>
-    [inputOffset, matches ? matches.join('') : null])(AlphaNumeric(input))
+    [inputOffset, matches ? matches.join('') : null])(SimpleParser(input))
 ```
 
 ## API
@@ -126,10 +167,10 @@ any([
 All parsers utilized by PC require an output of either the following types:
 
 ```ts
-type PrimitiveMatch = [number, string | null];
-type CompoundMatch = [number, string[] | null];
+type PrimitiveMatch = [offset: number, matches: string | null];
+type CompoundMatch = [offset: number, matches: string[] | null];
 ```
 
-The `number` value represents the total number of input characters consumed by
-the parser while the second argument represents the match. If `null` the input
-was not successfully parsed.
+The `offset` value represents the total number of input characters consumed by
+the parser while the second argument represents the matches made by it. If `matches`
+returns `null` this indicates that the input was not successfully parsed.

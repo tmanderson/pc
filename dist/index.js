@@ -43,7 +43,7 @@ var sequence = function (patterns, min, max) {
     return matcher(function (input) {
         return patterns.reduce(function (_a, p, i) {
             var offset = _a[0], matches = _a[1];
-            if (i > 0 && (offset === 0 || matches === null))
+            if (i > 0 && matches === null)
                 return [0, null];
             var _b = p(input.substring(offset)), n = _b[0], t = _b[1];
             // null indicates that pattern FAILED
