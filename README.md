@@ -36,6 +36,39 @@ Parser('5+5') // => [3, [['5', '+', '5']]]
 Parser('5.1') // => [3, [['5', '.', '1']]]
 ```
 
+### Formatting output
+
+All PC parsers take a single argument (an `input` string) and return a [Match](#Types).
+This makes interstitial operations (within the parsing context) a matter of defining
+a function with this input/ouput signature. Within that function you can manipulate
+input, output, the parser offset and/or the outputs of other parsers called within
+the function itself.
+
+```js
+const AlphaNumeric = match(/[a-zA-Z0-9]/);
+AlphaNumeric('Hello') // => [5, [ 'H', 'e', 'l', 'l', 'o' ] ]
+
+const FormattedAlphaNumeric = (input) => {
+  // AlphaNumeric parser returns a PrimitiveMatch [number, string]
+  const [inputOffset, matches] = AlphaNumeric(input);
+  // if `matches` is null, this implies no matches (so inputOffset is 0)
+  if (matches === null) return [0, null];
+  // Otherwise return the same offset (we're not reducing/consuming extra input)
+  // and concatenate all the matches from AlphaN
+  return [inputOffset, matches.join('')]
+}
+
+FormattedAlphaNumeric('Hello') // => [5, ['Hello']]
+```
+
+If you're one for concision, this function can be greatly minimized with an [IIFE](https://developer.mozilla.org/en-US/docs/Glossary/IIFE):
+
+```js
+const FormattedAlphaNumeric = (input) =>
+  (([inputOffset, matches]) =>
+    [inputOffset, matches ? matches.join('') : null])(AlphaNumeric(input))
+```
+
 ## API
 
 ### `match(pattern: string | RegExp, min?: number, max?: number): PrimitiveMatch`
@@ -62,13 +95,16 @@ sequence([
   match('w'),
   match('o'),
   match('w')
-])('wow') // => [3, [ 'wow' ] ]
+])('wow') // => [ 3, [ [ 'w', 'o', 'w' ] ] ]
 
 sequence([
   match(/[0-9]/, 3),
   match('-'),
+  match(/[0-9]/, 3),
+  match('-'),
   match(/[0-9]/, 4),
-])('123-4567') // => [ 8, [ '1', '2', '3', '-', '4', '5', '6', '7' ] ]
+])('123-456-7890') // =>
+// [ 12, [ [ '1', '2', '3', '-', '4', '5', '6', '-', '7', '8', '9', '0' ] ] ]
 ```
 
 ### `any(patterns: Array<Matcher>, min?: number, max?: number): CompoundMatch`
@@ -81,7 +117,8 @@ any([
   match(/[0-9]/),
   match(/[a-z ]/),
   match('Jodabalocky'),
-])('Jodabalocky is 33') // => [ 17, [ [ 'jodabalocky' ], [ ' is ' ], [ '33' ] ] ]
+])('Jodabalocky is 77') // =>
+// [ 17, [ [ 'jodabalocky' ], [ ' ', 'i', 's', ' ' ], [ '7', '7' ] ] ]
 ```
 
 ## Types
