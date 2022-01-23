@@ -53,7 +53,7 @@ export const sequence = (patterns: MatcherFunction[], min?: number, max?: number
   matcher(
     (input: string): CompoundMatch | PrimitiveMatch =>
       patterns.reduce(([offset, matches], p, i) => {
-        if (i > 0 && (offset === 0 || matches === null)) return [0, null];
+        if (i > 0 && matches === null) return [0, null];
         const [n, t] = p(input.substring(offset));
         // null indicates that pattern FAILED
         if (t === null) return [0, null];
