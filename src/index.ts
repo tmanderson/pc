@@ -1,15 +1,10 @@
-type PrimitiveMatch = [number, string | null];
-type CompoundMatch = [number, Array<string> | null];
+type MatcherResult = [number, Array<string> | string | null];
 // user defines the return value here
 type FormatFunction<ReturnType = any> = (tokens: string | string[]) => ReturnType;
-type MatcherFunction = (input: string) => PrimitiveMatch | CompoundMatch;
-type MatchLimit = number | '*' | '+';
+type MatcherFunction = (input: string) => MatcherResult;
 
-const matcher = (pattern: MatcherFunction, _min: MatchLimit = 1, _max?: MatchLimit): MatcherFunction =>
-  (input: string): PrimitiveMatch | CompoundMatch => {
-    const min = _min === '*' || _min === 0 ? 0 : _min === '+' ? 1 : _min;
-    const max = !_max && _max !== 0 ? -1 : _max;
-    
+const matcher = (pattern: MatcherFunction, min: number = 1, max: number = -1): MatcherFunction =>
+  (input: string): MatcherResult => {
     let i = 0;
     let matches = 0;
     const tokens: Array<string | string[]> = [];
@@ -18,17 +13,17 @@ const matcher = (pattern: MatcherFunction, _min: MatchLimit = 1, _max?: MatchLim
       const [n, m] = pattern(input.substring(i));
       if (m === null) break; // pattern FAILED
       // we concatenate primitive (i.e. string/regexp) matches
-      tokens.push(m as string | string[]);
+      tokens.push(m);
       matches++;
       i += n;
     }
 
-    return (matches < min ? [0, null] : [i, tokens]) as PrimitiveMatch | CompoundMatch;
+    return (matches < min ? [0, null] : [i, tokens]) as MatcherResult;
   };
 
 const regexp = (regexp: RegExp, min?: number, max?: number): MatcherFunction =>
   matcher(
-    (input: string): PrimitiveMatch =>
+    (input: string): MatcherResult =>
       regexp.test(input.charAt(0))
         ? [1, input.charAt(0)]
         : [0, null],
@@ -38,7 +33,7 @@ const regexp = (regexp: RegExp, min?: number, max?: number): MatcherFunction =>
 
 const string = (string: string, min?: number, max?: number): MatcherFunction =>
   matcher(
-    (input: string): PrimitiveMatch =>
+    (input: string): MatcherResult =>
       string === input.substring(0, string.length)
         ? [string.length, input.substring(0, string.length)]
         : [0, null],
@@ -51,13 +46,14 @@ export const match = (pattern: RegExp | string, min?: number, max?: number): Mat
 
 export const sequence = (patterns: MatcherFunction[], min?: number, max?: number): MatcherFunction =>
   matcher(
-    (input: string): CompoundMatch | PrimitiveMatch =>
+    (input: string): MatcherResult =>
       patterns.reduce(([offset, matches], p, i) => {
+        // once failed, fail to the end, fail always
         if (i > 0 && matches === null) return [0, null];
         const [n, t] = p(input.substring(offset));
         // null indicates that pattern FAILED
         if (t === null) return [0, null];
-        return [offset + n, matches!.concat(t.length === 1 ? t[0] : t)];
+        return [offset + n, matches!.concat([t])];
       }, [0, []]),
     min,
     max
@@ -65,13 +61,12 @@ export const sequence = (patterns: MatcherFunction[], min?: number, max?: number
 
 export const any = (patterns: MatcherFunction[], min?: number, max?: number): MatcherFunction =>
   matcher(
-    (input: string): CompoundMatch | PrimitiveMatch =>
+    (input: string): MatcherResult =>
       patterns.reduce(([offset, matches], p, i) => {
+        // once a match is found, continue to return the match
         if (matches !== null) return [offset, matches];
         const [n, t] = p(input.substring(offset));
-        // null indicates that pattern FAILED
-        if (t === null) return [0, null];
-        return [n, t.length === 1 ? t[0] : t];
+        return [n, t];
       }, [0, null]),
     min,
     max

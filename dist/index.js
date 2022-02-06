@@ -1,11 +1,10 @@
 "use strict";
 exports.__esModule = true;
 exports.any = exports.sequence = exports.match = void 0;
-var matcher = function (pattern, _min, _max) {
-    if (_min === void 0) { _min = 1; }
+var matcher = function (pattern, min, max) {
+    if (min === void 0) { min = 1; }
+    if (max === void 0) { max = -1; }
     return function (input) {
-        var min = _min === '*' || _min === 0 ? 0 : _min === '+' ? 1 : _min;
-        var max = !_max && _max !== 0 ? -1 : _max;
         var i = 0;
         var matches = 0;
         var tokens = [];
@@ -43,13 +42,14 @@ var sequence = function (patterns, min, max) {
     return matcher(function (input) {
         return patterns.reduce(function (_a, p, i) {
             var offset = _a[0], matches = _a[1];
+            // once failed, fail to the end, fail always
             if (i > 0 && matches === null)
                 return [0, null];
             var _b = p(input.substring(offset)), n = _b[0], t = _b[1];
             // null indicates that pattern FAILED
             if (t === null)
                 return [0, null];
-            return [offset + n, matches.concat(t.length === 1 ? t[0] : t)];
+            return [offset + n, matches.concat([t])];
         }, [0, []]);
     }, min, max);
 };
@@ -58,13 +58,11 @@ var any = function (patterns, min, max) {
     return matcher(function (input) {
         return patterns.reduce(function (_a, p, i) {
             var offset = _a[0], matches = _a[1];
+            // once a match is found, continue to return the match
             if (matches !== null)
                 return [offset, matches];
             var _b = p(input.substring(offset)), n = _b[0], t = _b[1];
-            // null indicates that pattern FAILED
-            if (t === null)
-                return [0, null];
-            return [n, t.length === 1 ? t[0] : t];
+            return [n, t];
         }, [0, null]);
     }, min, max);
 };
