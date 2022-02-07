@@ -1,6 +1,6 @@
 # P(arser)C(ombinator)
 
-PC is minimal zero-dependency [parser combinator](https://en.wikipedia.org/wiki/Parser_combinator)
+PC is a minimal zero-dependency [parser combinator](https://en.wikipedia.org/wiki/Parser_combinator)
 framework enabling intuitive and modular parser development.
 
 PC provides four fundamental parsers:
