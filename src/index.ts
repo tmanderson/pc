@@ -41,8 +41,13 @@ const string = (string: string, min?: number, max?: number): MatcherFunction =>
     max
   );
 
-export const match = (pattern: RegExp | string, min?: number, max?: number): MatcherFunction =>
-  typeof pattern === 'string' ? string(pattern, min, max) : regexp(pattern, min, max);
+export const match = (pattern: RegExp | string | MatcherFunction, min?: number, max?: number): MatcherFunction =>
+  typeof pattern === 'string'
+    ? string(pattern, min, max)
+    : typeof pattern === 'object'
+      ? regexp(pattern, min, max)
+      : matcher(pattern, min, max);
+
 
 export const sequence = (patterns: MatcherFunction[], min?: number, max?: number): MatcherFunction =>
   matcher(

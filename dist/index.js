@@ -35,7 +35,11 @@ var string = function (string, min, max) {
     }, min, max);
 };
 var match = function (pattern, min, max) {
-    return typeof pattern === 'string' ? string(pattern, min, max) : regexp(pattern, min, max);
+    return typeof pattern === 'string'
+        ? string(pattern, min, max)
+        : typeof pattern === 'object'
+            ? regexp(pattern, min, max)
+            : matcher(pattern, min, max);
 };
 exports.match = match;
 var sequence = function (patterns, min, max) {

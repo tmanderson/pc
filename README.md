@@ -33,53 +33,47 @@ npm i @tmanderson/pc
 
 ### Example
 
-A toy XML parser could begin with something like this
+#### JSON Parser
 
 ```js
-const TagOpen = match('<', 1, 1); // match for one and only one `<` character
-const TagClose = match('>', 1, 1); // matches for one and only one `>`
-const Slash = match('/', 1, 1); // matches for one and only one `/`
-const Word = match(/[-a-zA-Z]/); // capital and lowercase letters and `-` characters
-const Whitespace = match(/[\n\t\r ]/); // zero or more matches
-const OptionalWhitespace = match(/[\n\t\r ]/, 0); // zero or more matches
+const { match: m, sequence: s, any: a } = require('@tmanderson/pc');
+// Helper for patterns matching once and only once
+const m11 = p => m(p, 1, 1);
+// Special Characters
+const CBO = m11('{')
+const CBC = m11('}')
+const HBO = m11('[')
+const HBC = m11(']')
+const COL = m11(':')
+const COM = m11(',')
+const QOT = m11('"')
+const TRU = m11('true')
+const FLS = m11('false')
+const INT = m11(/[0-9]/)
+const ALP = m11(/[a-zA-Z0-9]/)
+const DOT = m11('.')
+const CHA = m11(/[^"]/)
+// Optional Whitespace
+const WSP = m(/[\n\s\t ]/, 0)
+// "Primitives"
+const BOO = a([ TRU, FLS ], 1, 1);
+const STR = s([ QOT, m(i => CHA(i), 0), QOT ], 1, 1);
+const NUM = s([ INT, s([ DOT, INT ], 0) ]);
+// Arrays (ENT = array-entry)
+const ENT = s([ WSP, i => TYP(i), WSP ])
+const ARR = s([ HBO, s([ ENT, s([ COM, ENT ], 0) ], 0), HBC ]);
+// Objects (KAV = key-and-value)
+const KAV = s([ WSP, a([ STR, ALP ]), WSP, COL, WSP, i => TYP(i), WSP ]);
+const OBJ = s([ CBO, s([ KAV, s([ COM, KAV ], 0) ], 0), CBC ]);
+// Value types
+const TYP = a([ STR, NUM, BOO, OBJ, ARR ]);
+// Root
+const JSON = a([ ARR, OBJ ], 0, 1);
 
-const Words = any([Word, Whitespace, match(/[:\/_.]/)]); // words and whitespace
-
-const OptionalAttributes = sequence([
-  OptionalWhitespace, // ` `
-  Word, // a word
-  match('='),
-  match('"', 1, 1), // followed by a double-quote
-  Words, // then words
-  match('"', 1, 1) // and finally a closing double-quote
-], 0);
-
-const TagChildren = any([
-  Words,
-  Whitespace,
-  i => Tag(i) // lazy evaluation (also enables self-recursive matches)
-], 0);
-
-// <tag attr="val" ... />
-const SelfClosingTag = sequence([TagOpen, Word, OptionalAttributes, OptionalWhitespace, Slash, TagClose]);
-// <tag attr="val" ...>
-const OpeningTag = sequence([TagOpen, Word, OptionalAttributes, OptionalWhitespace, TagClose]);
-// </tag>
-const ClosingTag = sequence([TagOpen, Slash, Word, TagClose]);
-// <tag attr="val" ...> ... </tag>
-const TagWithChildren = sequence([OpeningTag, TagChildren, ClosingTag]);
-const Tag = any([SelfClosingTag, TagWithChildren]);
-
-const Parse = any([Whitespace, Words, Tag]);
-
-Parse('<body></body>');
-Parse(`
-  <body>
-    PC is minimal <a href="https://en.wikipedia.org/wiki/Parser_combinator">
-    parser combinator</a> framework enabling intuitive and modular parser
-    development.  
-  </body>
-`);
+JSON('{}')
+JSON('[]')
+JSON('{ test: true }')
+JSON('{ "test": [1, "two", true, {}] }')
 ```
 
 ### Formatting output
