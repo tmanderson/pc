@@ -3,10 +3,17 @@
 PC is a minimal zero-dependency [parser combinator](https://en.wikipedia.org/wiki/Parser_combinator)
 framework enabling intuitive and modular parser development.
 
+A parser as we refer to it here is a function with the signature
+```
+(input: string) => [offset, matches]
+```
+
+Where `offset` indicates how far into `input` we were able to convert into `matches`.
+
 PC provides four fundamental parsers:
 
-- `string` for matching exact strings
-- `regexp` for matching character ranges
+- `string` for matching exact strings (e.g. `"hi" === "hi")
+- `regexp` for matching character ranges (e.g. `/me?/ === ["m", "me"]`)
 - `sequence` for matching ordered patterns of parsers (i.e. all patterns must match, one after the other)
 - `any` for matching any number of patterns in any order (i.e. at least one pattern must match)
 
