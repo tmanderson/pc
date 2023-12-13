@@ -12,8 +12,8 @@ Where `offset` indicates how far into `input` we were able to convert into `matc
 
 PC provides four fundamental parsers:
 
-- `string` for matching exact strings (e.g. `"hi" === "hi"`)
-- `regexp` for matching character ranges (e.g. `/me?/ === ["m", "me"]`)
+- `string` for matching exact strings (e.g. `"hi" === ["hi"]`)
+- `regexp` for matching character ranges (e.g. `/hi?/ === ["h", "hi"]`)
 - `sequence` for matching ordered patterns of parsers (i.e. all patterns must match, one after the other)
 - `any` for matching any number of patterns in any order (i.e. at least one pattern must match)
 
